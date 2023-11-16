@@ -37,12 +37,21 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
                 .excludePathPatterns("/admin/employee/login");
     }
 
+
+    /**
+     * knife4j 常用注解
+     * @Api 用在类上 controller 对类说明
+     * @ApiModel 用在类上 entity dto vo 对类说明
+     * @ApiModelProperty 用在属性上 描述属性
+     * @Api 用在方法上
+     */
     /**
      * 通过knife4j生成接口文档
      * @return
      */
     @Bean
     public Docket docket() {
+        log.info("准备生成接口文档");
         ApiInfo apiInfo = new ApiInfoBuilder()
                 .title("苍穹外卖项目接口文档")
                 .version("2.0")
@@ -62,6 +71,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
      * @param registry
      */
     protected void addResourceHandlers(ResourceHandlerRegistry registry) {
+        log.info("开始设置静态资源映射");
         registry.addResourceHandler("/doc.html").addResourceLocations("classpath:/META-INF/resources/");
         registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
     }
