@@ -13,4 +13,5 @@ public interface EmployeeService extends IService<Employee> {
      */
     Employee login(EmployeeLoginDTO employeeLoginDTO);
 
+    void add(Employee employee);
 }

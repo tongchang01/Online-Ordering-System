@@ -121,15 +121,23 @@ public class EmployeeController {
         BaseContext.removeCurrentId();
 
         //数据无误写入
-        employeeService.save(employee);
+        //employeeService.save(employee);
+        //有大问题 mp写入 id自增的默认策略是雪花算法 生成巨长一串id
+        //再通过id执行其他sql时 id就会匹配不上
+        //那个属性上重写策略为普通自增 @TableId(value = "id", type = IdType.AUTO)
+        //可以改成普通自增 但是在这不知道为什么不行
+        //发现id过长时在加注释就没用了 要把表删掉重建才生效所以要涨记性 以后用mp先检查一下
+        employeeService.add(employee);
+
 
         return Result.success();
     }
 
     /**
      * "员工分页查询"
+     *
      * @param empDTO 是封装前端传来的参数
-     * PageResult是封装要传回前端的数据格式
+     *               PageResult是封装要传回前端的数据格式
      * @return
      */
     @GetMapping("/page")
@@ -144,11 +152,11 @@ public class EmployeeController {
         Page<Employee> page1 = Page.of(empDTO.getPage(), empDTO.getPageSize());
 
         //设置排序条件
-        page1.addOrder(new OrderItem("create_time",false));//按id升序排序
+        page1.addOrder(new OrderItem("create_time", false));//按id升序排序
 
         //添加条件
         QueryWrapper<Employee> wrapper = new QueryWrapper<>();
-        wrapper.like( empDTO.getName()!= null&&empDTO.getName()!="",
+        wrapper.like(empDTO.getName() != null && empDTO.getName() != "",
                 "name", empDTO.getName());
 
         //查询
@@ -167,6 +175,38 @@ public class EmployeeController {
         //在emp实体类上给时间相关属性加上@JsonFormat(patten="yyyy-MM-dd HH:mm:ss")
         //方式二 在拦截其中统一进行转换 class WebMvcConfiguration 中添加消息转换器
         return Result.success(pageResult);
+    }
+
+
+    /**
+     * 启用禁用员工账号
+     *
+     * @param status
+     * @param id
+     * @return
+     */
+    @PostMapping("/status/{status}")
+    @ApiOperation("启用禁用员工账号")
+    public Result StartOrStop(@PathVariable Integer status, Long id) {
+
+        log.info("启用禁用员工账号 {}, {}", status, id);
+
+
+        //根据id修改状态 反选 状态
+        Employee employee = Employee.builder()
+                .status(status)
+                .id(id)
+                .updateTime(LocalDateTime.now())
+                .updateUser(BaseContext.getCurrentId())
+                .build();
+        BaseContext.removeCurrentId();
+        //通过builder new了一个新对象   .build();是结束的意思没有就报错还不好改
+        employeeService.updateById(employee);
+
+        return Result.success();
+        //为了练习 在xml里也编写一个通用的根据id改emp所有字段的代码段
+
+        //臭狗屎前端我的接口调试没问题 但是前端不行
     }
 
 }

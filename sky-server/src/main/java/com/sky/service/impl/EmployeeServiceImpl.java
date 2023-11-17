@@ -59,4 +59,10 @@ public class EmployeeServiceImpl extends ServiceImpl<EmployeeMapper, Employee> i
         return employee;
     }
 
+    @Override
+    public void add(Employee employee) {
+        employeeMapper.add(employee);
+    }
+
+
 }
