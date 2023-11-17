@@ -1,13 +1,18 @@
 package com.sky.controller.admin;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.TSFBuilder;
 import com.sky.constant.JwtClaimsConstant;
 import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
 import com.sky.context.BaseContext;
 import com.sky.dto.EmployeeLoginDTO;
+import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
 import com.sky.properties.JwtProperties;
+import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.EmployeeService;
 import com.sky.service.impl.EmployeeServiceImpl;
@@ -19,13 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -88,13 +91,13 @@ public class EmployeeController {
 
     @ApiOperation(value = "新增员工")
     @PostMapping
-    public Result save(@RequestBody EmployeeLoginDTO employeeLoginDTO){
+    public Result save(@RequestBody EmployeeLoginDTO employeeLoginDTO) {
 
-        log.info("新增员工:{}",employeeLoginDTO);
+        log.info("新增员工:{}", employeeLoginDTO);
         //dto里的数据还不够 还得从实体类里加 比如密码
         Employee employee = new Employee();
         //对象拷贝
-        BeanUtils.copyProperties(employeeLoginDTO,employee);
+        BeanUtils.copyProperties(employeeLoginDTO, employee);
         //添加前端没有提供的数据
         //添加账号状态 为启用
         employee.setStatus(StatusConstant.ENABLE);
@@ -121,6 +124,49 @@ public class EmployeeController {
         employeeService.save(employee);
 
         return Result.success();
+    }
+
+    /**
+     * "员工分页查询"
+     * @param empDTO 是封装前端传来的参数
+     * PageResult是封装要传回前端的数据格式
+     * @return
+     */
+    @GetMapping("/page")
+    @ApiOperation("员工分页查询")
+    public Result<PageResult> page(EmployeePageQueryDTO empDTO) {
+        log.info("员工分页查询 参数：{}", empDTO);
+        //empDTO.setPage(1);//默认给个 初始显示第几页
+        //empDTO.setPageSize(10);//默认给个 每页显示的数据条数
+        //画蛇添足了 前端有默认值
+
+        //创建分页对象
+        Page<Employee> page1 = Page.of(empDTO.getPage(), empDTO.getPageSize());
+
+        //设置排序条件
+        page1.addOrder(new OrderItem("create_time",false));//按id升序排序
+
+        //添加条件
+        QueryWrapper<Employee> wrapper = new QueryWrapper<>();
+        wrapper.like( empDTO.getName()!= null&&empDTO.getName()!="",
+                "name", empDTO.getName());
+
+        //查询
+        Page<Employee> employeePage = employeeService.page(page1, wrapper);
+
+        //解析
+        long total = employeePage.getTotal();//条数
+        List<Employee> records = employeePage.getRecords();//数据
+
+        //封装新对象用于返回 （要总记录数和emp集合）
+        PageResult pageResult = new PageResult(total, records);
+
+
+        //到这里发现 前端 的操作时间这一栏的数据格式有问题 要改一下 对日期进行格式化
+        //方式一 在当前方法下 设置日期格式
+        //在emp实体类上给时间相关属性加上@JsonFormat(patten="yyyy-MM-dd HH:mm:ss")
+        //方式二 在拦截其中统一进行转换 class WebMvcConfiguration 中添加消息转换器
+        return Result.success(pageResult);
     }
 
 }
