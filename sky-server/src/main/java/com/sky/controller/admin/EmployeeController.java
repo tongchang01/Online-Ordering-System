@@ -8,6 +8,7 @@ import com.sky.constant.JwtClaimsConstant;
 import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.dto.EmployeePageQueryDTO;
 import com.sky.entity.Employee;
@@ -206,7 +207,50 @@ public class EmployeeController {
         return Result.success();
         //为了练习 在xml里也编写一个通用的根据id改emp所有字段的代码段
 
-        //臭狗屎前端我的接口调试没问题 但是前端不行
+
     }
+
+
+    /**
+     * 根据id查询
+     * @param id
+     * @return
+     */
+    @ApiOperation("根据id查询 用于修改的回显")
+    @GetMapping("/{id}")
+    public Result<Employee> selById(@PathVariable long id) {
+
+        Employee employee = employeeService.getById(id);
+        employee.setPassword("******");//隐藏密码
+
+
+        return Result.success(employee);
+    }
+
+    /**
+     * 修改员工信息
+     * @param dto
+     * @return
+     */
+
+    @ApiOperation("修改员工信息")
+    @PutMapping
+    public Result updatabyid(@RequestBody EmployeeDTO dto){
+         log.info("修改员工信息 {}",dto);
+
+        Employee employee = new Employee();
+
+        BeanUtils.copyProperties(dto,employee);
+
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+        BaseContext.removeCurrentId();
+
+        employeeService.updateById(employee);
+
+
+        return Result.success();
+    }
+
 
 }
