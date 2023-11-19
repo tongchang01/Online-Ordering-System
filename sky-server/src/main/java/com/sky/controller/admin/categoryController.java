@@ -7,20 +7,23 @@ import com.sky.context.BaseContext;
 import com.sky.dto.CategoryDTO;
 import com.sky.dto.CategoryPageQueryDTO;
 import com.sky.entity.Category;
+import com.sky.entity.Dish;
+import com.sky.entity.Setmeal;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.impl.categoryServiceimpl;
+import com.sky.service.impl.dishServiceimpl;
+import com.sky.service.impl.setmealServiceimpl;
+import com.sky.service.setmealService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import jdk.nashorn.internal.ir.BaseNode;
 import lombok.extern.slf4j.Slf4j;
 import lombok.var;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,6 +40,12 @@ import java.util.List;
 public class categoryController {
     @Autowired
     private categoryServiceimpl categoryService;
+
+    @Autowired
+    private dishServiceimpl dishService;
+
+    @Autowired
+    private setmealServiceimpl setmealService;
 
 
     /**
@@ -87,4 +96,79 @@ public class categoryController {
         return Result.success();
 
     }
+
+    /**
+     * 修改分类信息
+     * @param dto
+     * @return
+     */
+    @PutMapping("/admin/category")
+    @ApiOperation("修改分类信息")
+    public Result updata (@RequestBody CategoryDTO dto ){
+        log.info("修改分类信息{}",dto);
+        Category category = new Category();
+        BeanUtils.copyProperties(dto, category);
+
+        category.setUpdateTime(LocalDateTime.now());
+        category.setUpdateUser(BaseContext.getCurrentId());
+        BaseContext.removeCurrentId();
+
+        categoryService.updateById(category);
+
+        return Result.success();
+    }
+
+    /**
+     * 分类启用禁用
+     * @param status
+     * @param id
+     * @return
+     */
+    @PostMapping("/admin/category/status/{status}")
+    @ApiOperation("分类启用禁用")
+    public Result StartOrStop(@PathVariable Integer status, Long id){
+
+        log.info("启用禁用分类{} {}",status,id);
+        Category category = Category.builder()
+                .updateTime(LocalDateTime.now())
+                .updateUser(BaseContext.getCurrentId())
+                .id(id)
+                .status(status)
+                .build();
+        BaseContext.removeCurrentId();
+
+        categoryService.updateById(category);
+
+        return Result.success();
+    }
+
+    /**
+     * 删除分类
+     * @param id
+     * @return
+     */
+    @DeleteMapping("/admin/category")
+    @ApiOperation("删除分类")
+    public Result del (Integer id){
+        log.info("删除分类{}",id);
+
+        //删除分类 要先判断该分类下有无数据(菜品或套餐) 有的话拒绝删除
+        QueryWrapper<Dish> wrapper = new QueryWrapper<>();
+        wrapper.eq("category_id",id);
+        List<Dish> dishList = dishService.list(wrapper);
+
+        QueryWrapper<Setmeal> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("category_id",id);
+        List<Setmeal> setmealList = setmealService.list(queryWrapper);
+        if (!dishList.isEmpty() || !setmealList.isEmpty()){
+            return Result.error("该分类下存在数据,拒绝删除操作");
+        }else {
+            categoryService.removeById(id);
+
+            return Result.success();
+        }
+
+    }
+    //todo 这里差一个根据id查询 后面用到了在写
+
 }
