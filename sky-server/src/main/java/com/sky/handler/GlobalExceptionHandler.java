@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理sql异常
-     * 新增员工时用户名重复
+     * 新增操作时用户名重复
      * @param exception
      * @return
      */

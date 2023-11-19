@@ -1,5 +1,7 @@
 package com.sky.dto;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -8,6 +10,7 @@ import java.io.Serializable;
 public class CategoryDTO implements Serializable {
 
     //主键
+
     private Long id;
 
     //类型 1 菜品分类 2 套餐分类
