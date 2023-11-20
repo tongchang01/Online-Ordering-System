@@ -106,8 +106,8 @@ public class EmployeeController {
         employee.setPassword(
                 DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
         //添加创建时间和修改时间
-        employee.setCreateTime(LocalDateTime.now());
-        employee.setUpdateTime(LocalDateTime.now());
+        //employee.setCreateTime(LocalDateTime.now());
+        //employee.setUpdateTime(LocalDateTime.now());
 
         //添加当前记录创建人 的信息 （当前登录用户）
         // to do 等待完善 需获取当前登录id 用jwt已经封装id
@@ -116,10 +116,10 @@ public class EmployeeController {
         //于是在拦截器中提前把id封装到线程空间中 实现在当前类中获取到
         //用完ThreadLocal后记得要删除线程释放资源 不然会一直留在内存里
         //方法封装完了 在sky-common/src/main/java/com/sky/context/BaseContext.java
-        employee.setCreateUser(BaseContext.getCurrentId());
-        employee.setCreateUser(BaseContext.getCurrentId());
+        //employee.setCreateUser(BaseContext.getCurrentId());
+        //employee.setCreateUser(BaseContext.getCurrentId());
         //释放线程
-        BaseContext.removeCurrentId();
+        //BaseContext.removeCurrentId();
 
         //数据无误写入
         //employeeService.save(employee);
