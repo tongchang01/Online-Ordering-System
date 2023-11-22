@@ -171,6 +171,20 @@ public class categoryController {
         }
 
     }
-    //todo 这里差一个根据id查询 后面用到了在写
+
+    /**
+     * 根据类型查询
+     * @param type
+     * @return
+     */
+    @GetMapping("/admin/category/list")
+    @ApiOperation("根据类型查询")
+    public Result list(Integer type){
+        log.info("根据类型查询{}",type);
+        QueryWrapper<Category> wrapper = new QueryWrapper<>();
+        wrapper.eq("type",type);
+        List<Category> list = categoryService.list(wrapper);
+        return Result.success(list);
+    }
 
 }

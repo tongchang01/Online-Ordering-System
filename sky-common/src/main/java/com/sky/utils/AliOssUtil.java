@@ -18,6 +18,8 @@ public class AliOssUtil {
     private String accessKeyId;
     private String accessKeySecret;
     private String bucketName;
+    //这四个数据就是oss的相关信息到阿里云的控制台去找
+    //accessKeySecret 要好好保存很重要 对了就没了
 
     /**
      * 文件上传
