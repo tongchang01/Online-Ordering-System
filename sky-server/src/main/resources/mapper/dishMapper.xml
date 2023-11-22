@@ -5,7 +5,23 @@
 <insert id="add" useGeneratedKeys="true" keyProperty="id">
     insert into dish (name, category_id, price, image, description, status, create_time, update_time, create_user,
                       update_user)
-    values (#{name},#{categoryId},#{price},#{image},#{description},#{status},#{createTime},
+     values (#{name},#{categoryId},#{price},#{image},#{description},#{status},#{createTime},
             #{updateTime},#{createUser},#{updateUser})
 </insert>
+    <select id="pageQuery" resultType="com.sky.vo.DishVO">
+       select d.* ,c.name as categoryName from dish d left outer join category c on d.category_id = c.id
+       <where>
+           <if test="dto.name!=null">
+               and d.name like concat('%',#{dto.name},'%')
+           </if>
+           <if test="dto.categoryId!=null">
+               and d.category_id = #{dto.categoryId}
+           </if>
+           <if test="dto.status!=null">
+               and d.status = concat('%',#{dto.status},'%')
+           </if>
+       </where>
+       order by d.create_time desc
+    </select>
+
 </mapper>
