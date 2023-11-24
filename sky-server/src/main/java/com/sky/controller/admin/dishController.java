@@ -1,6 +1,7 @@
 package com.sky.controller.admin;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
@@ -47,36 +48,53 @@ public class dishController {
         return Result.success();
     }
 
+
+    /**
+     *
+     * @param dto
+     * @return
+     * //这里是多表联查 而且要二次封装结果 不建议使用mp
+     * //所以要自定义sql但是依然使用mp提供的分页插件
+     * //把mapper接口的形参第一个设置为 page 但在sql语句中不会使用到  mp会自动分页
+     * //mapper里的方法有两个及以上参数时必须加@Param
+     * //且再xml里要用注解的标识的名字点属性 即 dto.name ...
+     */
     @GetMapping("/page")
     @ApiOperation("菜品分页查询")
     public Result<PageResult> page(DishPageQueryDTO dto){
       log.info("菜品分页查询{}",dto);
         Page<DishVO> page = Page.of(dto.getPage(), dto.getPageSize());
 
-        //这里是多表联查 而且要二次封装结果 不建议使用mp
-        //所以要自定义sql但是依然使用mp提供的分页插件
-        //把mapper接口的形参第一个设置为 page 但在sql语句中不会使用到  mp会自动分页
-        //mapper里的方法有两个及以上参数时必须加@Param
-        //且再xml里要用注解的标识的名字点属性 即 dto.name ...
+        page.addOrder(new OrderItem("create_time",false));
 
+        QueryWrapper<DishVO> wrapper = new QueryWrapper<>();
+        wrapper.like(dto.getName()!=null,"name",dto.getName())
+                .eq(dto.getCategoryId()!=null,"category_id",dto.getCategoryId())
+                .eq(dto.getStatus()!=null,"status",dto.getStatus());
+        /**
+         * 遗留问题 用wrapper构造条件 拼接进sql里只有category_id 生效 其他不生效
+         * 实在没办法了 索性直接全部写xml
+         */
 
-        PageResult pageResult =dishService.pageQuery(page,dto);
-
-//        QueryWrapper<Dish> wrapper = new QueryWrapper<>();
-//        wrapper.like(dto.getName()!=null,"name",dto.getName())
-//                .eq(dto.getCategoryId()!=null,"category_id",dto.getCategoryId())
-//                .eq(dto.getStatus()!=null,"status",dto.getStatus());
-//
-//        Page<Dish> dishPage = dishService.page(page, wrapper);
-//
-//        long total = dishPage.getTotal();
-//        List<Dish> records = dishPage.getRecords();
-//
-//       PageResult pageResultResult = new PageResult(total, records);
-//        return Result.success(pageResultResult);
-
+        PageResult pageResult =dishService.pageQuery(page,dto,wrapper);
 
         return Result.success(pageResult);
 
+    }
+
+    //单个或批量删除
+    //起售状态不能删除
+    //被套餐关联的菜品不能删除
+    //删除菜品后 它关联的口味也应一并删除
+    //涉及到3张表 dish dish_flavor setmeal_dish
+    @DeleteMapping
+    @ApiOperation("批量删除菜品")
+    //@RequestParam：将请求参数绑定到你控制器的方法参数上（是springmvc中接收普通参数的注解）
+    public Result delids(@RequestParam List<Long> ids){
+        log.info("批量删除菜品{}",ids);
+
+        dishService.deleteBatch(ids);
+
+        return Result.success();
     }
 }

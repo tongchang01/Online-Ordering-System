@@ -32,6 +32,10 @@ import java.util.UUID;
  * 这个功能再瑞吉外卖中有使用
  * 但是后期要把路径换成Linux的路径就要两个路径了
  * 注意区分
+ *
+ * 重新用阿里云oss了
+ * 记得我使用的是香港的域名 直接用大陆网络大概率上传图片失败
+ * 要挂梯子
  **/
 @RestController
 @RequestMapping("/admin/common")
