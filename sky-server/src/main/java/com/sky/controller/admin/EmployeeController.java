@@ -3,7 +3,6 @@ package com.sky.controller.admin;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.core.TSFBuilder;
 import com.sky.constant.JwtClaimsConstant;
 import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
@@ -11,12 +10,13 @@ import com.sky.context.BaseContext;
 import com.sky.dto.EmployeeDTO;
 import com.sky.dto.EmployeeLoginDTO;
 import com.sky.dto.EmployeePageQueryDTO;
+import com.sky.dto.PasswordEditDTO;
 import com.sky.entity.Employee;
+import com.sky.exception.PasswordErrorException;
 import com.sky.properties.JwtProperties;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.EmployeeService;
-import com.sky.service.impl.EmployeeServiceImpl;
 import com.sky.utils.JwtUtil;
 import com.sky.vo.EmployeeLoginVO;
 import io.swagger.annotations.Api;
@@ -26,7 +26,6 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -192,27 +191,33 @@ public class EmployeeController {
 
         log.info("启用禁用员工账号 {}, {}", status, id);
 
+        ////设置操作权限 管理员才可以修改
+        Long id1 = BaseContext.getCurrentId();
+        if (id1!=1){
+            //throw new RuntimeException("当前登录用户非管理员,无权操作!");
+            return Result.error("当前登录用户非管理员,无权操作!");
+            //todo 这里前端的提示信息有误 实际上是修改失败的 但是前端不会改 暂时就这样
+        }
 
         //根据id修改状态 反选 状态
         Employee employee = Employee.builder()
                 .status(status)
                 .id(id)
                 .updateTime(LocalDateTime.now())
-                .updateUser(BaseContext.getCurrentId())
+                .updateUser(id1)
                 .build();
         BaseContext.removeCurrentId();
         //通过builder new了一个新对象   .build();是结束的意思没有就报错还不好改
         employeeService.updateById(employee);
 
         return Result.success();
-        //为了练习 在xml里也编写一个通用的根据id改emp所有字段的代码段
-
-
+//        //为了练习 在xml里也编写一个通用的根据id改emp所有字段的代码段
     }
 
 
     /**
      * 根据id查询
+     *
      * @param id
      * @return
      */
@@ -229,21 +234,28 @@ public class EmployeeController {
 
     /**
      * 修改员工信息
+     *
      * @param dto
      * @return
      */
 
     @ApiOperation("修改员工信息")
     @PutMapping
-    public Result updatabyid(@RequestBody EmployeeDTO dto){
-         log.info("修改员工信息 {}",dto);
+    public Result updatabyid(@RequestBody EmployeeDTO dto) {
+        log.info("修改员工信息 {}", dto);
+
+        Long id = BaseContext.getCurrentId();
+        //设置操作权限 只能修改自己的员工信息
+        if (dto.getId()!=id){
+            return Result.error("当前登录用户非管理员,无权操作!");
+        }
 
         Employee employee = new Employee();
 
-        BeanUtils.copyProperties(dto,employee);
+        BeanUtils.copyProperties(dto, employee);
 
         employee.setUpdateTime(LocalDateTime.now());
-        employee.setUpdateUser(BaseContext.getCurrentId());
+        employee.setUpdateUser(id);
         BaseContext.removeCurrentId();
 
         employeeService.updateById(employee);
@@ -253,4 +265,32 @@ public class EmployeeController {
     }
 
 
+    @PutMapping("/editPassword")
+    @ApiOperation("修改密码")
+    //前端没有把id传过来 获取不到 手动获取当前登录的id
+    public Result psupdate(@RequestBody PasswordEditDTO dto) {
+        log.info("修改密码{}", dto);
+        Long id = BaseContext.getCurrentId();
+        Employee employee = employeeService.getById(id);//获取旧数据
+
+        //把前端传来的新密码md5加密后与数据库的密码比较
+        String pwd = DigestUtils.md5DigestAsHex(dto.getOldPassword().getBytes());
+        //加密后的密码
+
+        if(!pwd.equals(employee.getPassword())){
+            return Result.error("原密码错误");
+        }//失败
+
+        String new_pwd = DigestUtils.md5DigestAsHex(dto.getNewPassword().getBytes());
+        //加密新密码
+
+        employee.setPassword(DigestUtils.md5DigestAsHex(dto.getNewPassword().getBytes()));
+        employee.setUpdateUser(id);
+        employee.setUpdateTime(LocalDateTime.now());
+        //长了个记性 .builder() 只适用于new对象是 要改属性还是的用set
+
+        employeeService.updateById(employee);
+
+        return Result.success("密码修改成功");
+    }
 }

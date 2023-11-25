@@ -18,4 +18,10 @@ public interface dishService extends IService<Dish> {
     PageResult pageQuery(Page<DishVO> page, DishPageQueryDTO dto, QueryWrapper<DishVO> wrapper);
 
     void deleteBatch(List<Long> ids);
+
+    DishVO getByIdwithflavor(Long id);
+
+    void updatewithflavor(DishDTO dto);
+
+    void updatestatus(Integer status, Long id);
 }

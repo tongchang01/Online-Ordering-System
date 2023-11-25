@@ -3,13 +3,16 @@ package com.sky.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sky.annotation.AutoFill;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.StatusConstant;
+import com.sky.context.BaseContext;
 import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
 import com.sky.entity.SetmealDish;
+import com.sky.enumeration.OperationType;
 import com.sky.exception.DeletionNotAllowedException;
 import com.sky.mapper.SetmealDishMapper;
 import com.sky.mapper.dishMapper;
@@ -21,6 +24,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.beans.beancontext.BeanContext;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -103,25 +108,96 @@ public class dishServiceimpl extends ServiceImpl<dishMapper, Dish> implements di
         }
         //被套餐关联的菜品不能删除 查SetmealDish 表里 dishid的每一列 中setmeal_id不为空
         QueryWrapper<SetmealDish> wrapper = new QueryWrapper<>();
-        wrapper.in("dish_id",ids);
+        wrapper.in("dish_id", ids);
         //select setmeal_id form setmeal_dish where id in ids
         //ids 为动态sql <foreach collection="ids" item="dishId" separator="," open="(" close=")">
         //              #{disId}
         //             </foreach>
 
         List<SetmealDish> setmealDishes = setmealDishMapper.selectList(wrapper);
-        if (!setmealDishes.isEmpty()){
+        if (!setmealDishes.isEmpty()) {
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
         dishServiceimpl.removeByIds(ids);
         //删除菜品表数据
 
         QueryWrapper<DishFlavor> flavorQueryWrapper = new QueryWrapper<>();
-        flavorQueryWrapper.in("dish_id",ids);
+        flavorQueryWrapper.in("dish_id", ids);
         dishFlavorsMapper.delete(flavorQueryWrapper);
 
 
     }
 
+    /**
+     * 根据id查询菜品和对应的口味表数据
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public DishVO getByIdwithflavor(Long id) {
+        //根据id查询菜品
+        Dish dish = dishServiceimpl.getById(id);
 
+        //根据菜品id查询口味数据
+        QueryWrapper<DishFlavor> wrapper = new QueryWrapper<>();
+        wrapper.eq("dish_id", id);
+        List<DishFlavor> dishFlavor = dishFlavorsMapper.selectList(wrapper);
+
+        //将数据封装到vo
+        DishVO dishVO = new DishVO();
+        BeanUtils.copyProperties(dish,dishVO);
+        dishVO.setFlavors(dishFlavor);
+        return dishVO;
+    }
+
+    @Override
+    @Transactional
+    //@AutoFill(OperationType.UPDATE)//自动填充修改人和修改时间
+    //这个注解必须是在方法上 且形参第一个是实体类 且这个实体类里要有 相对的几个公共字段才行
+    //这里我就只能手动了
+    public void updatewithflavor(DishDTO dto) {
+
+        //修改菜品表的基本信息
+        Dish dish = new Dish();
+        BeanUtils.copyProperties(dto,dish);
+        dish.setUpdateUser(BaseContext.getCurrentId());
+        dish.setUpdateTime(LocalDateTime.now());
+        BaseContext.removeCurrentId();
+        //修改光dto的数据不够 还有修改人和修改时间
+        dishServiceimpl.updateById(dish);
+
+        //修改关联的口味数据
+        //为了逻辑简单 一律删除当前菜品的所有的口味数据再重新填充
+        List<DishFlavor> flavorList = dto.getFlavors();
+        if (!flavorList.isEmpty()){
+            QueryWrapper<DishFlavor> flavorQueryWrapper = new QueryWrapper<>();
+            flavorQueryWrapper.eq("dish_id",dish.getId());
+            dishFlavorsMapper.delete(flavorQueryWrapper);
+            //删除旧数据
+
+            for (DishFlavor flavor : flavorList) {
+                flavor.setDishId(dto.getId());//让新口味与菜品关联
+                //这里很重要没关联的话这里就修改不了
+            }
+
+            dishFlavorsMapper.insertBatch(flavorList);//插入处理好的新数据
+        }
+
+    }
+
+    @Override
+    //@AutoFill(OperationType.UPDATE)
+    //这个注解必须是在方法上 且形参第一个是实体类 且这个实体类里要有 相对的几个公共字段才行
+    //这里我就只能手动了
+    public void updatestatus(Integer status, Long id) {
+        Dish dish = dishServiceimpl.getById(id);
+        dish.setStatus(status);
+        dish.setUpdateTime(LocalDateTime.now());
+        dish.setUpdateUser(BaseContext.getCurrentId());
+        BaseContext.removeCurrentId();
+
+
+        dishServiceimpl.updateById(dish);
+    }
 }
