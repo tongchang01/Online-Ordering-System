@@ -10,7 +10,9 @@ import com.sky.dto.DishDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
+import com.sky.entity.SetmealDish;
 import com.sky.exception.DeletionNotAllowedException;
+import com.sky.mapper.SetmealDishMapper;
 import com.sky.mapper.dishFlavorsMapper;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
@@ -38,6 +40,8 @@ import java.util.List;
 public class dishController {
     @Autowired
     private dishServiceimpl dishService;
+    @Autowired
+    private SetmealDishMapper setmealDishMapper;
 
 
     @PostMapping
@@ -95,6 +99,8 @@ public class dishController {
     public Result delids(@RequestParam List<Long> ids) {
         log.info("批量删除菜品{}", ids);
 
+
+
         dishService.deleteBatch(ids);
 
         return Result.success();
@@ -117,7 +123,7 @@ public class dishController {
         if (status== StatusConstant.ENABLE){
             throw new DeletionNotAllowedException
                     (MessageConstant.DISH_ON_update.toString()
-                            +",不予回显信息。请先停售当前菜品");
+                            +",请先停售当前菜品");
         }
 
         DishVO dishVo = dishService.getByIdwithflavor(id);
@@ -140,7 +146,7 @@ public class dishController {
         return Result.success();
     }
 
-    //todo 根据分类id查询 再分页里有写 单独的接口先不写 后面用上了再写
+
 
     @PostMapping("/status/{status}")
     @ApiOperation("菜品起售、停售")
@@ -152,5 +158,17 @@ public class dishController {
         dishService.updatestatus(status,id);
 
         return Result.success();
+    }
+
+    //根据分类id查询 用于回显分类下的菜品
+    @GetMapping("/list")
+    @ApiOperation("根据分类id查询菜品")
+    public Result<List<Dish>> list(Long categoryId){
+        log.info("根据分类id查询菜品:categoryId{}",categoryId);
+
+        List<Dish> list = dishService.list
+                (new QueryWrapper<Dish>().eq("category_id", categoryId));
+
+        return Result.success(list);
     }
 }
