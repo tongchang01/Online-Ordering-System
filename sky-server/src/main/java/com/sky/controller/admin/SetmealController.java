@@ -17,6 +17,7 @@ import com.sky.service.impl.setmealServiceimpl;
 
 import com.sky.vo.DishVO;
 import com.sky.vo.SetmealVO;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -37,6 +38,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/setmeal")
 @Slf4j
+@Api(tags = "套餐管理")
 public class SetmealController {
 
     @Autowired
