@@ -47,12 +47,17 @@ sky:
     admin-ttl: 7200000
     # 设置前端传递过来的令牌名称
     admin-token-name: token
+    user-secret-key: tongyibin
+    user-ttl: 7200000
+    user-token-name: authentication
   alioss:
     access-key-id: ${sky.alioss.access-key-id}
     access-key-secret: ${sky.alioss.access-key-secret}
     bucket-name: ${sky.alioss.bucket-name}
     endpoint: ${sky.alioss.endpoint}
-
+  wechat:
+    appid: ${sky.wechat.appid}
+    secret: ${sky.wechat.secret}
 #z这里#{}意思是引用 引用spring.profiles.active.dev
 #即引用的是application-dev.yml
 #这个dev是可以改也需要改的应对开发环境和生产环境
