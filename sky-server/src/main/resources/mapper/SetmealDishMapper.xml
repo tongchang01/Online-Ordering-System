@@ -3,4 +3,5 @@
 <mapper namespace="com.sky.mapper.SetmealDishMapper">
 
     <insert id="insertBatch" ></insert>
+
 </mapper>
