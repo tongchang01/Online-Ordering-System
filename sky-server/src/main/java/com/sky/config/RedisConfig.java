@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
  * @user tyb童以滨
@@ -26,10 +27,13 @@ public class RedisConfig {
         redisTemplate.setConnectionFactory(factory);
 
         //设置key的序列化方式
-        redisTemplate.setKeySerializer(redisTemplate.getStringSerializer());
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+
+
 
 
         return redisTemplate;
 
     }
+
 }

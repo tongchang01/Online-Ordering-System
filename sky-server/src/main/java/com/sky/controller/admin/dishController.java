@@ -23,9 +23,11 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @user tyb童以滨
@@ -42,6 +44,8 @@ public class dishController {
     private dishServiceimpl dishService;
     @Autowired
     private SetmealDishMapper setmealDishMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
 
     @PostMapping
@@ -52,6 +56,12 @@ public class dishController {
         //这个新增操作涉及两张表 dish和dish_flavor 也就有事务开启
         //所以就不用mp了
         dishService.add(dto);
+
+        //新增菜品后要更新redis中的菜品列表
+        //1动态构造key
+        String key = "dish_" + dto.getCategoryId();
+        //2删除redis中的菜品列表
+        redisTemplate.delete(key);
 
         return Result.success();
     }
@@ -99,9 +109,12 @@ public class dishController {
     public Result delids(@RequestParam List<Long> ids) {
         log.info("批量删除菜品{}", ids);
 
-
-
         dishService.deleteBatch(ids);
+
+        //删除菜品后要更新redis中的菜品列表
+        //1直接把所有缓存都删掉这样方便一点
+        clearCache("dish_*");
+
 
         return Result.success();
     }
@@ -143,6 +156,11 @@ public class dishController {
 
         dishService.updatewithflavor(dto);
 
+        //修改菜品后要更新redis中的菜品列表
+        //这里的判断逻辑很复杂 比如说修改了菜品分类 这样就涉及好几份缓存的更新
+        //就直接把所有缓存都删掉这样方便一点
+        clearCache("dish_*");
+
         return Result.success();
     }
 
@@ -153,9 +171,10 @@ public class dishController {
     public Result updatestatus(@PathVariable Integer status,Long id){
         log.info("菜品起售、停售:{status},{id}",status,id);
 
-
-
         dishService.updatestatus(status,id);
+
+        //修改菜品后要更新redis中的菜品列表
+        clearCache("dish_*");
 
         return Result.success();
     }
@@ -170,5 +189,11 @@ public class dishController {
                 (new QueryWrapper<Dish>().eq("category_id", categoryId));
 
         return Result.success(list);
+    }
+
+    //清除所有缓存
+    private void clearCache(String pattern){
+        Set keys = redisTemplate.keys(pattern);
+        redisTemplate.delete(keys);
     }
 }
