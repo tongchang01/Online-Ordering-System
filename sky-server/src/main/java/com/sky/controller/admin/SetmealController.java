@@ -22,6 +22,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import com.sky.service.impl.dishServiceimpl;
@@ -70,6 +71,10 @@ public class SetmealController {
 
     @PostMapping
     @ApiOperation("新增套餐")
+    @CacheEvict(cacheNames = "setmealCache",key = "#dto.categoryId")
+    //allEntries = true:删除所有缓存
+    //这里用精确清理的逻辑：在某个套餐下新增了一个套餐，那么就清理这个套餐的全部缓存
+    //在下次微信端查询的时候再加上该套餐的缓存
     public Result add(@RequestBody SetmealDTO dto) {
         log.info("新增套餐{}", dto);
 
@@ -99,6 +104,9 @@ public class SetmealController {
 
     @PutMapping
     @ApiOperation("修改套餐")
+    @CacheEvict(cacheNames = "setmealCache",allEntries = true)
+    //allEntries = true:删除所有缓存
+    //这里因为可以修改套餐的所属分类，所以选择删除全部缓存
     public Result update(@RequestBody SetmealDTO dto) {
         log.info("修改套餐{}", dto);
 
@@ -115,6 +123,9 @@ public class SetmealController {
     @DeleteMapping
     @ApiOperation("批量删除套餐")
     @Transactional
+    @CacheEvict(cacheNames = "setmealCache",allEntries = true)
+    //allEntries = true:删除所有缓存
+    //因为这里传的时ids和前面的id对应不上 选择删除全部
     public Result deleteBatch(@RequestParam List<Long> ids) {
 
         log.info("批量删除套餐{}", ids);
@@ -135,6 +146,7 @@ public class SetmealController {
 
     @PostMapping("/status/{status}")
     @ApiOperation("修改停售起售状态")
+    @CacheEvict(cacheNames = "setmealCache",allEntries = true)
     public Result updateStatus(@PathVariable Integer status,Long id) {
         log.info("修改停售起售状态{},{}", status,id);
           if (status== StatusConstant.ENABLE){

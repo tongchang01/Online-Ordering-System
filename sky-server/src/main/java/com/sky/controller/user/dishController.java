@@ -84,7 +84,12 @@ public class dishController {
             dishVO.setFlavors(dishFlavorsMapper.selectList
                     (new QueryWrapper<DishFlavor>().eq("dish_id", dish.getId())));
             //根据菜品id查询口味
+
+
            dishVOList.add(dishVO);
+           //3不重开一个对象比如 list.add(dishVO)会导致空指针
+
+
         }
         //将查询结果放入redis中
 
