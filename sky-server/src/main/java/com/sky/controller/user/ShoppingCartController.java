@@ -10,6 +10,7 @@ import com.sky.service.impl.ShoppingCartServiceImpl;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -65,5 +66,43 @@ public class ShoppingCartController {
 
 
         return Result.success(list);
+    }
+
+    @DeleteMapping ("/clean")
+    @ApiOperation(value = "清空购物车")
+    public Result sub(){
+        Long id = BaseContext.getCurrentId();//获取当前用户id
+
+        shoppingCartService.remove(new QueryWrapper<ShoppingCart>().eq("user_id",id));
+
+        return Result.success();
+    }
+
+    @PostMapping("/sub")
+    @ApiOperation(value = "减少购物车")
+    public Result sub(@RequestBody ShoppingCartDTO DTO) {
+        log.info("减少购物车:{}",DTO);
+        ShoppingCart shoppingCart = new ShoppingCart();
+        BeanUtils.copyProperties(DTO, shoppingCart);
+        shoppingCart.setUserId(BaseContext.getCurrentId());//获取当前用户id
+
+        //查询当前用户的购物车
+        List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
+        ShoppingCart cart = list.get(0);//购物车数据
+
+
+        //当前单独删除的对象数量是否为1
+        Integer number = cart.getNumber();
+        if (number == 1) {
+            //如果是1则删除
+            shoppingCartMapper.deleteById(cart.getId());
+        } else {
+            //如果不是1则减一
+            cart.setNumber(number - 1);
+            shoppingCartMapper.updateById(cart);
+        }
+
+
+        return Result.success();
     }
 }
