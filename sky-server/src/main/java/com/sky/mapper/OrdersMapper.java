@@ -1,9 +1,15 @@
 package com.sky.mapper;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.toolkit.Constants;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
+import com.sky.vo.OrderVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
@@ -16,4 +22,7 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface OrdersMapper extends BaseMapper<Orders> {
 
+    Page<OrderVO> page(@Param("pageResultPage") Page<OrderVO> pageResultPage,
+                       @Param("dto") OrdersPageQueryDTO dto,
+                       @Param(Constants.WRAPPER)QueryWrapper<OrderVO> wrapper);
 }

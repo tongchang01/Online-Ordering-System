@@ -3,8 +3,10 @@ package com.sky.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.*;
@@ -12,10 +14,15 @@ import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
 import com.sky.exception.ShoppingCartBusinessException;
 import com.sky.mapper.*;
+import com.sky.result.PageResult;
+import com.sky.result.Result;
 import com.sky.service.IOrdersService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.sky.vo.DishVO;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.sky.utils.WeChatPayUtil;
+import org.springframework.web.bind.annotation.GetMapping;
 
 /**
  * <p>
@@ -181,6 +189,29 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
                 .build();
 
         ordersMapper.updateById(orders);
+    }
+
+    @Override
+    public PageResult pageQueryUser(Page<OrderVO> pageResultPage, OrdersPageQueryDTO dto, QueryWrapper<OrderVO> wrapper) {
+
+        Page<OrderVO> pageQuery =ordersMapper.page(pageResultPage,dto,wrapper);
+
+        List<OrderVO> records = pageQuery.getRecords();
+        long total = pageQuery.getTotal();
+
+        if (records!=null){
+            for (OrderVO record : records) {
+                Long id = record.getId();
+                QueryWrapper<OrderDetail> queryWrapper = new QueryWrapper<>();
+                queryWrapper.eq("order_id",id);
+                List<OrderDetail> detailList = orderDetailMapper.selectList(queryWrapper);
+                record.setOrderDetailList(detailList);
+
+
+            }
+        }
+
+        return new PageResult(total,records);
     }
 
 
