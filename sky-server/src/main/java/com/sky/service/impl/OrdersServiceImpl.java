@@ -93,6 +93,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         orders.setPhone(addressBook.getPhone());
         orders.setConsignee(addressBook.getConsignee());
         orders.setUserId(id);
+        orders.setAddress(addressBook.getDetail());
 
         ordersMapper.insert(orders);
         Long ordersId = orders.getId();
