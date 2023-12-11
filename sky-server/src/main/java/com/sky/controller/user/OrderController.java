@@ -98,7 +98,6 @@ public class OrderController {
 
         QueryWrapper<OrderVO> wrapper = new QueryWrapper<>();
         wrapper.like(DTO.getNumber()!=null,"number",DTO.getNumber());
-        wrapper.like(DTO.getNumber()!=null,"number",DTO.getNumber());
         wrapper.like(DTO.getPhone()!=null,"phone",DTO.getPhone());
         wrapper.eq(id!=null,"user_id", BaseContext.getCurrentId());
         wrapper.eq(DTO.getStatus()!=null,"status",DTO.getStatus());
