@@ -3,21 +3,29 @@ package com.sky.controller.admin;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersDTO;
 import com.sky.dto.OrdersPageQueryDTO;
+import com.sky.dto.OrdersRejectionDTO;
 import com.sky.entity.OrderDetail;
+import com.sky.entity.Orders;
+import com.sky.exception.OrderBusinessException;
+import com.sky.mapper.OrderDetailMapper;
 import com.sky.mapper.OrdersMapper;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.impl.OrdersServiceImpl;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -38,6 +46,9 @@ public class OrderController {
 
     @Autowired
     private OrdersMapper ordersMapper;
+
+    @Autowired
+    private OrderDetailMapper orderDetailMapper;
 
 
     @GetMapping("/conditionSearch")
@@ -84,4 +95,95 @@ public class OrderController {
 
         return Result.success(new PageResult(total, records));
     }
+
+
+
+    @GetMapping("/statistics")
+    @ApiOperation("各个状态的订单数量统计")
+    public Result<OrderStatisticsVO> statistics() {
+        log.info("各个状态的订单数量统计");
+
+        //分别查询待接单、待派送、派送中 状态的 订单数量 即 2，3，4
+        Integer toBeConfirmed = ordersMapper.selectCount
+                (new QueryWrapper<Orders>().eq("status", Orders.TO_BE_CONFIRMED));
+
+        Integer CONFIRMED = ordersMapper.selectCount
+                (new QueryWrapper<Orders>().eq("status", Orders.CONFIRMED));
+
+        Integer deliveryInProgress = ordersMapper.selectCount
+                (new QueryWrapper<Orders>().eq("status", Orders.DELIVERY_IN_PROGRESS));
+
+        OrderStatisticsVO vo = new OrderStatisticsVO();
+        vo.setToBeConfirmed(toBeConfirmed);
+        vo.setConfirmed(CONFIRMED);
+        vo.setDeliveryInProgress(deliveryInProgress);
+
+        return Result.success(vo);
+    }
+
+
+    @GetMapping("/details/{id}")
+    @ApiOperation("订单详情")
+    public Result<OrderVO> details(@PathVariable("id") Long id){
+        log.info("订单详情：{}", id);
+
+        Orders byId = orderService.getById(id);
+
+        List<OrderDetail> orderDetailList = orderDetailMapper.selectList
+                (new QueryWrapper<OrderDetail>().eq("order_id", id));
+
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(byId, orderVO);
+        orderVO.setOrderDetailList(orderDetailList);
+
+        return Result.success(orderVO);
+    }
+
+
+
+    @PutMapping("/confirm")
+    @ApiOperation("接单")
+    public Result confirm(@RequestBody OrdersDTO dto){
+        log.info("接单：{}", dto);//只穿来了订单id
+
+        //根据订单id更新订单的状态、支付方式、支付状态、结账时间
+        Orders orders = Orders.builder()
+                .id(dto.getId())
+                .status(Orders.CONFIRMED)
+
+                .build();
+
+        ordersMapper.updateById(orders);
+
+        return Result.success();
+    }
+
+    @PutMapping("/rejection")
+    @ApiOperation("拒单")
+    public Result rejection(@RequestBody OrdersRejectionDTO dto){
+        log.info("拒单：{}", dto);//只穿来了订单id
+
+        Orders ordersDB = ordersMapper.selectById(dto.getId());
+
+        //订单状态为2时（待接单）才能拒单
+        if (ordersDB.getStatus() != Orders.TO_BE_CONFIRMED) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        //本应退款 但是跳过支付了 就不必退款了
+
+
+        //根据订单id更新订单的状态、取消原因，取消时间
+        Orders orders = Orders.builder()
+                .id(dto.getId())
+                .status(Orders.CANCELLED)
+                .rejectionReason(dto.getRejectionReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+
+        ordersMapper.updateById(orders);
+
+        return Result.success();
+    }
+
 }

@@ -87,7 +87,7 @@ public class OrdersServiceImpl extends ServiceImpl<OrdersMapper, Orders> impleme
         BeanUtils.copyProperties(ordersSubmitDTO, orders);
         orders.setOrderTime(LocalDateTime.now());
         orders.setPayStatus(Orders.UN_PAID);
-        orders.setStatus(Orders.PENDING_PAYMENT);
+        orders.setStatus(Orders.TO_BE_CONFIRMED);//本应是待支付，但是这里直接跳过了支付
         orders.setNumber(String.valueOf(System.currentTimeMillis()) + id);
         orders.setPhone(addressBook.getPhone());
         orders.setConsignee(addressBook.getConsignee());
