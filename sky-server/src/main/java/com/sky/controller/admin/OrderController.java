@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersCancelDTO;
 import com.sky.dto.OrdersDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersRejectionDTO;
@@ -85,9 +86,9 @@ public class OrderController {
         for (OrderVO record : records) {
             List<OrderDetail> orderDetailList = record.getOrderDetailList();
             for (OrderDetail orderDetail : orderDetailList) {
-               String dishes = orderDetail.getName()+"*"+ orderDetail.getNumber()+";";
+                String dishes = orderDetail.getName() + "*" + orderDetail.getNumber() + ";";
 
-               record.setOrderDishes(dishes);
+                record.setOrderDishes(dishes);
 
             }
 
@@ -95,7 +96,6 @@ public class OrderController {
 
         return Result.success(new PageResult(total, records));
     }
-
 
 
     @GetMapping("/statistics")
@@ -124,7 +124,7 @@ public class OrderController {
 
     @GetMapping("/details/{id}")
     @ApiOperation("订单详情")
-    public Result<OrderVO> details(@PathVariable("id") Long id){
+    public Result<OrderVO> details(@PathVariable("id") Long id) {
         log.info("订单详情：{}", id);
 
         Orders byId = orderService.getById(id);
@@ -140,10 +140,9 @@ public class OrderController {
     }
 
 
-
     @PutMapping("/confirm")
     @ApiOperation("接单")
-    public Result confirm(@RequestBody OrdersDTO dto){
+    public Result confirm(@RequestBody OrdersDTO dto) {
         log.info("接单：{}", dto);//只穿来了订单id
 
         //根据订单id更新订单的状态、支付方式、支付状态、结账时间
@@ -160,7 +159,7 @@ public class OrderController {
 
     @PutMapping("/rejection")
     @ApiOperation("拒单")
-    public Result rejection(@RequestBody OrdersRejectionDTO dto){
+    public Result rejection(@RequestBody OrdersRejectionDTO dto) {
         log.info("拒单：{}", dto);//只穿来了订单id
 
         Orders ordersDB = ordersMapper.selectById(dto.getId());
@@ -184,6 +183,84 @@ public class OrderController {
         ordersMapper.updateById(orders);
 
         return Result.success();
+    }
+
+
+    @PutMapping("/cancel")
+    @ApiOperation("商家取消订单")
+    public Result cancel(@RequestBody OrdersCancelDTO dto) {
+        log.info("取消订单：{}", dto);
+
+        Orders ordersDB = ordersMapper.selectById(dto.getId());//原订单
+
+
+        //这里本应判断订单状态 看是否要退款 但是跳过支付了 就不必退款了
+
+
+        if (ordersDB == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        //更新订单状态、取消原因、取消时间
+        Orders orders = Orders.builder()
+                .id(dto.getId())
+                .status(Orders.CANCELLED)
+                .cancelReason(dto.getCancelReason())
+                .cancelTime(LocalDateTime.now())
+                .build();
+
+        ordersMapper.updateById(orders);
+
+        return Result.success();
+    }
+
+
+    @PutMapping("/delivery/{id}")
+    @ApiOperation("派送订单")
+    public Result delivery(@PathVariable Long id) {
+        log.info("派送订单：{}", id);
+
+        Orders ordersDB = ordersMapper.selectById(id);//原订单
+
+        // 校验订单是否存在，并且状态为3（已接单）才能派送
+        if (ordersDB == null || ordersDB.getStatus() != Orders.CONFIRMED) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+
+        //根据订单id更新订单的状态、支付方式、支付状态、结账时间
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.DELIVERY_IN_PROGRESS)
+                .build();
+
+        ordersMapper.updateById(orders);
+
+        return Result.success();
+    }
+
+
+    @PutMapping("/complete/{id}")
+    @ApiOperation("完成订单")
+    public Result complete(@PathVariable Long id) {
+        log.info("完成订单：{}", id);
+
+        Orders ordersDB = ordersMapper.selectById(id);//原订单
+
+        // 校验订单是否存在，并且状态为4（派送中）才能完成
+        if (ordersDB == null || ordersDB.getStatus() != Orders.DELIVERY_IN_PROGRESS) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.COMPLETED)
+                .deliveryTime(LocalDateTime.now())
+                .build();
+
+        ordersMapper.updateById(orders);
+        return Result.success();
+
     }
 
 }
