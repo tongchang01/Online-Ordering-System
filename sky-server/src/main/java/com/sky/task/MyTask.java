@@ -66,7 +66,7 @@ public class MyTask {
      */
 
     //处理超时订单
-    @Scheduled(cron = "0 * * * * ? *")//每分钟执行一次
+    @Scheduled(cron = "0 * * * * ? ")//每分钟执行一次
     //@Scheduled(cron = "0/5 * * * * ?")//每隔5秒执行一次 用于测试
     public void processOverTimeOrder() {
         log.info("处理超时订单:{}", LocalDateTime.now());

@@ -1,5 +1,6 @@
 package com.sky.controller.user;
 
+import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -13,7 +14,6 @@ import com.sky.entity.Orders;
 import com.sky.entity.ShoppingCart;
 import com.sky.exception.OrderBusinessException;
 import com.sky.mapper.OrderDetailMapper;
-import com.sky.mapper.ShoppingCartMapper;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.impl.OrdersServiceImpl;
@@ -21,17 +21,21 @@ import com.sky.service.impl.ShoppingCartServiceImpl;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.util.Json;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +57,9 @@ public class OrderController {
     private OrderDetailMapper orderDetailMapper;
     @Autowired
     private ShoppingCartServiceImpl shoppingCartService;
+
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     @PostMapping("/submit")
     @ApiOperation(value = "提交订单")
@@ -77,6 +84,28 @@ public class OrderController {
         log.info("订单支付：{}", ordersPaymentDTO);
         OrderPaymentVO orderPaymentVO = orderService.payment(ordersPaymentDTO);
         log.info("生成预支付交易单：{}", orderPaymentVO);
+
+        /**
+         * 由于跳过了支付接口，所以把下单的来电提醒写在这，本应该写在支付成功的回调接口里
+         * 通过websocket发送消息给后台：type,orderId,content
+         */
+        Map map=new HashMap();
+        map.put("type",1);//1表示来电提醒,2表示用户催单
+
+        //传来的dto里面有订单号，用订单号查订单id
+        Orders orders = orderService.getOne
+                (new QueryWrapper<Orders>().eq("number",
+                        ordersPaymentDTO.getOrderNumber()));//当前订单
+        map.put("orderId",orders.getId());
+
+        map.put("content","订单号："+orders.getNumber());
+
+        //map转json
+        String jsonString = JSON.toJSONString(map);
+
+        //发送消息
+        webSocketServer.sendToAllClient(jsonString);
+
 
 
         return Result.success(orderPaymentVO);
