@@ -89,13 +89,18 @@ public class OrderController {
          * 由于跳过了支付接口，所以把下单的来电提醒写在这，本应该写在支付成功的回调接口里
          * 通过websocket发送消息给后台：type,orderId,content
          */
-        Map map=new HashMap();
-        map.put("type",1);//1表示来电提醒,2表示用户催单
 
         //传来的dto里面有订单号，用订单号查订单id
         Orders orders = orderService.getOne
-                (new QueryWrapper<Orders>().eq("number",
+                (new QueryWrapper<Orders>().eq("id",
                         ordersPaymentDTO.getOrderNumber()));//当前订单
+
+        if (orders == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        Map map=new HashMap();
+        map.put("type",1);//1表示来电提醒,2表示用户催单
         map.put("orderId",orders.getId());
 
         map.put("content","订单号："+orders.getNumber());
@@ -258,6 +263,38 @@ public class OrderController {
         orderService.updateById(orders);//更新订单
 
         return Result.success();
+    }
+
+    /**
+     * 用户催单
+     */
+    @GetMapping("/reminder/{id}")
+    @ApiOperation("用户催单")
+    public Result reminder(@PathVariable("id") Long id) throws Exception {
+        log.info("用户催单：{}", id);
+
+        //用传来的id查询当前订单
+        Orders orders = orderService.getById(id);//当前订单
+
+        if (orders == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        //通过websocket发送消息给后台：type,orderId,content
+        Map map=new HashMap();
+        map.put("type",2);//1表示来电提醒,2表示用户催单
+        map.put("orderId",orders.getId());
+
+        map.put("content","订单号："+orders.getNumber());
+
+        //map转json
+        String jsonString = JSON.toJSONString(map);
+
+        //发送消息
+        webSocketServer.sendToAllClient(jsonString);
+
+        return Result.success();
+
     }
 
 
