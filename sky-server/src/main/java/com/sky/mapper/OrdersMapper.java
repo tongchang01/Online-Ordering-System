@@ -11,6 +11,8 @@ import com.sky.vo.OrderVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Map;
+
 /**
  * <p>
  * 订单表 Mapper 接口
@@ -25,4 +27,6 @@ public interface OrdersMapper extends BaseMapper<Orders> {
     Page<OrderVO> page(@Param("pageResultPage") Page<OrderVO> pageResultPage,
                        @Param("dto") OrdersPageQueryDTO dto,
                        @Param(Constants.WRAPPER)QueryWrapper<OrderVO> wrapper);
+
+    Double sumtodayTurnover(Map map);
 }
