@@ -3,8 +3,10 @@ package com.sky.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.sky.entity.Orders;
 import com.sky.mapper.OrdersMapper;
+import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
+import com.sky.vo.UserReportVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +33,17 @@ public class ReportServiceimpl implements ReportService {
     @Autowired
     private OrdersMapper ordersMapper;
 
-    @Override
-    public TurnoverReportVO turnoverStatistics(LocalDate begin, LocalDate end) {
+    @Autowired
+    private UserMapper userMapper;
+
+    /**
+     *
+     * @param begin
+     * @param end
+     * @return
+     * 日期处理方法
+     */
+    public ArrayList<LocalDate> dateList(LocalDate begin, LocalDate end){
 
         //大前提，begin<end
         if (begin.isAfter(end)){
@@ -46,6 +57,13 @@ public class ReportServiceimpl implements ReportService {
             begin=begin.plusDays(1);
             dateList.add(begin);
         }
+        return dateList;
+    }
+
+    @Override
+    public TurnoverReportVO turnoverStatistics(LocalDate begin, LocalDate end) {
+
+        ArrayList<LocalDate> dateList = dateList(begin, end);//日期处理方法
 
         ArrayList<Double> turnoverlist = new ArrayList<>();//存放每天的营业额
         for (LocalDate date : dateList) {
@@ -79,6 +97,48 @@ public class ReportServiceimpl implements ReportService {
         return TurnoverReportVO.builder()
                 .dateList(string)
                 .turnoverList(string1)
+                .build();
+    }
+
+    @Override
+    public UserReportVO userStatistics(LocalDate begin, LocalDate end) {
+        ArrayList<LocalDate> dateList = dateList(begin, end);//日期处理方法
+
+        //每天新增的用户数量
+        //select count(*) from user where create_time>beginDateTime and create_time<endDateTime;
+        ArrayList<Integer> newUserList = new ArrayList<>();
+        //每天用户总量
+        //select count(*) from user where create_time<endDateTime;
+        ArrayList<Integer> totalUserList = new ArrayList<>();
+
+        for (LocalDate date : dateList) {
+            //开始时间为当天的0点，结束时间为当天的23点59分59秒
+            LocalDateTime beginDateTime = LocalDateTime.of(date, LocalDateTime.MIN.toLocalTime());
+            LocalDateTime endDateTime = LocalDateTime.of(date, LocalDateTime.MAX.toLocalTime());
+
+            //设置查询条件
+            Map map = new HashMap<>();
+            map.put("end",end);
+
+            //查询每天用户总量
+            Integer totalUser = userMapper.countbyMap(map);
+
+            //查询每天新增的用户数量
+            map.put("begin",begin);
+            Integer newUser = userMapper.countbyMap(map);
+            if (newUser==null){
+                newUser=0;
+            }
+
+            totalUserList.add(totalUser);
+            newUserList.add(newUser);
+        }
+
+
+        return UserReportVO.builder()
+                .dateList(StringUtils.join(dateList, ","))
+                .newUserList(StringUtils.join(newUserList, ","))
+                .totalUserList(StringUtils.join(totalUserList, ","))
                 .build();
     }
 }
