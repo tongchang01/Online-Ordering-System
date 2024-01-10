@@ -29,4 +29,6 @@ public interface OrdersMapper extends BaseMapper<Orders> {
                        @Param(Constants.WRAPPER)QueryWrapper<OrderVO> wrapper);
 
     Double sumtodayTurnover(Map map);
+
+    Integer countbyMap(Map map);
 }
