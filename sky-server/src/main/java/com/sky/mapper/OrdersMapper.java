@@ -5,12 +5,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.entity.Orders;
 import com.sky.vo.OrderVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,4 +34,6 @@ public interface OrdersMapper extends BaseMapper<Orders> {
     Double sumtodayTurnover(Map map);
 
     Integer countbyMap(Map map);
+
+    List<GoodsSalesDTO> getGoodsSales(LocalDateTime begin, LocalDateTime end);
 }

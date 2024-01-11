@@ -3,6 +3,7 @@ package com.sky.controller.admin;
 import com.sky.result.Result;
 import com.sky.service.ReportService;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import io.swagger.annotations.Api;
@@ -20,9 +21,7 @@ import java.time.LocalDate;
  * @user TYB童以滨
  * @email Tong-yinbin@outlook.com
  * @date2024/1/8
- * @time14:15
- *
- * 数据统计
+ * @time14:15 数据统计
  **/
 @RestController
 @RequestMapping("/admin/report")
@@ -35,19 +34,19 @@ public class ReportController {
 
     /**
      * 营业额统计
+     *
      * @return
      */
     @GetMapping("/turnoverStatistics")
     @ApiOperation(value = "营业额统计")
     public Result<TurnoverReportVO> turnoverStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
-            @DateTimeFormat(pattern = "yyyy-MM-dd")LocalDate end){
-        log.info("营业额统计 begin={} end={}",begin,end);
-        return Result.success(reportService.turnoverStatistics(begin,end));
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
+        log.info("营业额统计 begin={} end={}", begin, end);
+        return Result.success(reportService.turnoverStatistics(begin, end));
     }
 
     /**
-     *
      * @param begin
      * @param end
      * @return
@@ -56,14 +55,15 @@ public class ReportController {
     @ApiOperation(value = "用户统计")
     public Result<UserReportVO> userStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
-            @DateTimeFormat(pattern = "yyyy-MM-dd")LocalDate end){
-        log.info("用户统计 begin={} end={}",begin,end);
-        return Result.success(reportService.userStatistics(begin,end));
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
+        log.info("用户统计 begin={} end={}", begin, end);
+        return Result.success(reportService.userStatistics(begin, end));
     }
 
 
     /**
      * 订单统计
+     *
      * @param begin
      * @param end
      * @return
@@ -72,8 +72,18 @@ public class ReportController {
     @ApiOperation(value = "订单统计")
     public Result<OrderReportVO> ordersStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
-            @DateTimeFormat(pattern = "yyyy-MM-dd")LocalDate end){
-        log.info("订单统计 begin={} end={}",begin,end);
-        return Result.success(reportService.ordersStatistics(begin,end));
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
+        log.info("订单统计 begin={} end={}", begin, end);
+        return Result.success(reportService.ordersStatistics(begin, end));
+    }
+
+    @GetMapping("/top10")
+    @ApiOperation(value = "销量排名")
+    public Result<SalesTop10ReportVO> top10(
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
+            @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
+        log.info("销量排名 begin={} end={}", begin, end);
+        return Result.success(reportService.gettop10(begin, end));
+
     }
 }

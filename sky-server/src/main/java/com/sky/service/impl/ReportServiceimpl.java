@@ -1,11 +1,13 @@
 package com.sky.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import com.sky.mapper.OrdersMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.OrderReportVO;
+import com.sky.vo.SalesTop10ReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @user TYB童以滨
@@ -195,5 +198,29 @@ public class ReportServiceimpl implements ReportService {
         map.put("end",end);
 
         return ordersMapper.countbyMap(map);
+    }
+
+    @Override
+    public SalesTop10ReportVO gettop10(LocalDate begin, LocalDate end) {
+        LocalDateTime begintime = LocalDateTime.of(begin, LocalDateTime.MIN.toLocalTime());
+        LocalDateTime endtime = LocalDateTime.of(end, LocalDateTime.MAX.toLocalTime());
+
+        //要查两张表，orders和order_detail
+        //条件是订单状态为已完成，订单时间在begin和end之间
+        List<GoodsSalesDTO> SalesTop = ordersMapper.getGoodsSales(begintime, endtime);
+
+        //更改格式
+        List<String> names =
+                SalesTop.stream().map(GoodsSalesDTO::getName).collect(Collectors.toList());
+        String namelist = StringUtils.join(names, ",");
+
+        List<Integer> nums =
+                SalesTop.stream().map(GoodsSalesDTO::getNumber).collect(Collectors.toList());
+        String numlist = StringUtils.join(nums, ",");
+
+        return SalesTop10ReportVO.builder()
+                .nameList(namelist)
+                .numberList(numlist)
+                .build();
     }
 }
