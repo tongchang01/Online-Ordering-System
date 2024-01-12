@@ -10,6 +10,8 @@ import com.sky.vo.SetmealVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Map;
+
 /**
  * 套餐mapper
  */
@@ -18,4 +20,11 @@ public interface setmealMapper extends BaseMapper<Setmeal> {
     Page<SetmealVO> pageQuery(@Param("page") Page<SetmealVO> page,
                               @Param("dto") SetmealPageQueryDTO dto,
                               @Param(Constants.WRAPPER) QueryWrapper<SetmealVO> wrapper);
+
+    /**
+     * 根据条件统计套餐数量
+     * @param map
+     * @return
+     */
+    Integer countByMap(Map map);
 }

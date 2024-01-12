@@ -14,6 +14,8 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Map;
+
 @Mapper
 public interface dishMapper extends BaseMapper<Dish> {
     @Insert("")
@@ -35,4 +37,11 @@ public interface dishMapper extends BaseMapper<Dish> {
     //这里是多表联查 而且要二次封装结果 不建议使用mp
     //所以要自定义sql但是依然使用mp提供的分页插件
     //把mapper接口的形参第一个设置为 page 但在sql语句中不会使用到 mp会自动分页
+
+    /**
+     * 根据条件统计菜品数量
+     * @param map
+     * @return
+     */
+    Integer countByMap(Map map);
 }
